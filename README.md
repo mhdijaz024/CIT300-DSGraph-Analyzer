@@ -74,6 +74,7 @@ The only `java.util` import in the project is `Scanner`, for reading the console
 - Implemented the `PerformanceTracker` class with its own growable array and filtering by operation
 - Built menu options 4 (Linked List Operations), 7 (Performance Comparison) and 8 (Display All Results)
 - Wrote the complexity explanations shown in the performance table
+- Wrote the automated test suite (`StructureTest`)
 
 ### Member 4
 
@@ -98,11 +99,10 @@ The only `java.util` import in the project is `Scanner`, for reading the console
 
 **Individual Contribution:**
 - Jointly built `MenuUI` (the main menu and all six submenus), `InputValidator` and `Main`
-- Jointly wrote `StructureTest`, the 130-check automated test suite
-- Jointly produced this README, the test plan, the Git workflow and the demonstration video
+- Jointly tested and debugged the integrated system
+- Jointly produced this README and the demonstration video
 
-Each member can explain and demonstrate their own component. The video is split
-along exactly these lines — see `docs/DEMO_VIDEO_SCRIPT.md`.
+Each member can explain and demonstrate their own component.
 
 ---
 
@@ -222,35 +222,28 @@ Expected final lines:
 ## 6. Project Structure
 
 ```
-DSGraphAnalyzer/
+CIT300-DSGraph-Analyzer/
 ├── README.md                        <- this file
 ├── run.bat / run.sh                 <- one-click compile and run
 ├── .gitignore
-├── src/
-│   ├── structures/
-│   │   ├── DynamicArray.java        <- Member 1 : growable array
-│   │   ├── IntStack.java            <- Member 2 : LIFO stack
-│   │   ├── IntQueue.java            <- Member 2 : FIFO queue
-│   │   ├── SinglyLinkedList.java    <- Member 3 : linked list
-│   │   └── Graph.java               <- Member 4 : adjacency-list graph, BFS/DFS
-│   ├── algorithms/
-│   │   └── SearchAlgorithms.java    <- Member 1 : linear and binary search
-│   ├── performance/
-│   │   ├── OperationResult.java     <- Member 3 : one measurement
-│   │   └── PerformanceTracker.java  <- Member 3 : collects measurements
-│   ├── ui/
-│   │   ├── InputValidator.java      <- all console reads and validation
-│   │   └── MenuUI.java              <- main menu and all six submenus
-│   └── app/
-│       ├── Main.java                <- entry point
-│       └── StructureTest.java       <- 130-check automated test suite
-└── docs/
-    ├── TEST_PLAN.md
-    ├── GIT_WORKFLOW.md
-    ├── DEMO_VIDEO_SCRIPT.md
-    ├── SUBMISSION_CHECKLIST.md
-    ├── test_input.txt
-    └── test_input_graph.txt
+└── src/
+    ├── structures/
+    │   ├── DynamicArray.java        <- Member 1 : growable array
+    │   ├── IntStack.java            <- Member 2 : LIFO stack
+    │   ├── IntQueue.java            <- Member 2 : FIFO queue
+    │   ├── SinglyLinkedList.java    <- Member 3 : linked list
+    │   └── Graph.java               <- Member 4 : adjacency-list graph, BFS/DFS
+    ├── algorithms/
+    │   └── SearchAlgorithms.java    <- Member 1 : linear and binary search
+    ├── performance/
+    │   ├── OperationResult.java     <- Member 3 : one measurement
+    │   └── PerformanceTracker.java  <- Member 3 : collects measurements
+    ├── ui/
+    │   ├── InputValidator.java      <- all console reads and validation
+    │   └── MenuUI.java              <- main menu and all six submenus
+    └── app/
+        ├── Main.java                <- entry point
+        └── StructureTest.java       <- 130-check automated test suite
 ```
 
 ---
@@ -366,26 +359,46 @@ algorithm. The program says so on screen too.
 
 ## 9. Testing
 
-Two levels, both reproducible from the submitted folder.
+Two levels of testing were carried out, both reproducible from this repository.
 
-1. **Automated component tests** — `java -cp bin app.StructureTest` runs **130
-   checks** across all five structures, both search algorithms and the
-   performance tracker, including boundary cases: empty pop, empty dequeue,
-   queue reuse after draining, invalid indexes, binary search on an empty array,
-   a disconnected graph, and a 12-vertex / 66-edge dense graph that exercises the
-   DFS stack worst case. **Result: 130/130 pass.**
-2. **Scripted end-to-end menu runs** — `java -cp bin app.Main --sample --no-pause
-   < docs/test_input_graph.txt` drives every menu and submenu including the
-   invalid-input paths, and exits cleanly with no exception.
+### Automated component tests
 
-Full details are in `docs/TEST_PLAN.md`.
+```bash
+java -cp bin app.StructureTest
+```
+
+Runs **130 checks** across all five structures, both search algorithms and the
+performance tracker. **Result: 130 passed, 0 failed.**
+
+| Group | Checks | What is covered |
+|---|---|---|
+| Array | 21 | capacity growth, insert at index with shifting, invalid index rejected, sorted/unsorted detection, bubble sort correctness, out-of-range delete throws |
+| Stack | 14 | **pop underflow rejected**, **peek on empty rejected**, LIFO order, search by depth, reuse after emptying |
+| Queue | 10 | **dequeue underflow rejected**, FIFO order, search by position, **reuse after draining (rear pointer reset)** |
+| Linked List | 21 | head insert is one step, tail insert walks the list, invalid position rejected, delete head and middle, reverse correctness |
+| Searching | 15 | linear finds the last element in exactly n steps, binary finds it in ≤ 8 steps, both report misses correctly, **binary search on an empty array is safe** |
+| Graph | 35 | duplicate vertex, duplicate edge, self-loop, edge to a missing vertex, BFS order, DFS visits each vertex once, **isolated vertex not reached**, shortest path, vertex removal with edge cleanup, **12-vertex / 66-edge dense graph for the DFS stack worst case** |
+| Performance Tracker | 14 | recording, filter by operation, **growth past the initial capacity of 8**, clear |
+
+### Manual end-to-end testing
+
+Every menu and submenu was driven manually, including every invalid-input path
+listed in section 8. No operation produced an unhandled exception.
+
+### A defect found during testing
+
+The DFS stack was originally sized to the number of vertices. Iterative DFS can
+push a vertex once per **incoming edge** before that vertex is marked visited,
+so on a dense graph the stack overflowed its array. It was resized to
+`vertexCount + 2 × edgeCount + 1`, and a 12-vertex / 66-edge regression test was
+added. The sparse sample graph would never have exposed this — it took a
+deliberately dense test case.
 
 ---
 
 ## 10. GitHub Collaboration
 
-Each member worked on their own feature branch and merged through a pull request
-reviewed by another member:
+Each member worked on their own feature branch and merged through a pull request:
 
 | Branch | Member | Content |
 |---|---|---|
@@ -393,9 +406,9 @@ reviewed by another member:
 | `feature/stack-queue` | Isham | IntStack, IntQueue, menus 2 and 3 |
 | `feature/linkedlist-performance` | Arshad | SinglyLinkedList, PerformanceTracker, menus 4, 7 and 8 |
 | `feature/graph-traversal` | Nafeel | Graph, BFS, DFS, shortest path, menu 6 |
-| `feature/integration-docs` | All | MenuUI, InputValidator, Main, tests, documentation |
+| `feature/integration-docs` | All | MenuUI, InputValidator, Main, test suite |
 
-Step-by-step commands are in `docs/GIT_WORKFLOW.md`.
+All five pull requests were merged into `main`.
 
 ---
 
@@ -413,10 +426,6 @@ Step-by-step commands are in `docs/GIT_WORKFLOW.md`.
 - [x] Input validation and empty-structure handling
 - [x] All group members' names and student IDs recorded
 - [x] Responsibilities and individual contributions documented
-- [ ] GitHub repository with branches, commits and pull requests — see `docs/GIT_WORKFLOW.md`
-- [ ] One merged demonstration video, under 15 minutes, all faces visible — see `docs/DEMO_VIDEO_SCRIPT.md`
+- [x] GitHub repository with branches, commits and pull requests
+- [ ] One merged demonstration video, under 15 minutes, all faces visible
 - [ ] Zipped folder uploaded through the LMS link by the group leader
-- [ ] If using Google Drive: Editor access to **asanka.r@sltc.ac.lk** and **kaushika.w@sltc.ac.lk**
-
-The unticked items are the ones the group completes outside the code.
-`docs/SUBMISSION_CHECKLIST.md` walks through each.
