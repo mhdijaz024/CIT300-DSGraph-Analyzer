@@ -85,3 +85,4 @@ public class PerformanceTracker {
         count = 0;
     }
 }
+// Performance tracking supports menu options 7 and 8 - Member 3 (M.I.M Arshad)
